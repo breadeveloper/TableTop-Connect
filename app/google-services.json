@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "507184639942",
+    "project_id": "tabletop-connect-4358d",
+    "storage_bucket": "tabletop-connect-4358d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:507184639942:android:f0c1c28360f5bcfa564cc7",
+        "android_client_info": {
+          "package_name": "com.example.tabletopconnect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvk20GvTMqYgY7pRs8HHlUi7fdoaX6Abs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
