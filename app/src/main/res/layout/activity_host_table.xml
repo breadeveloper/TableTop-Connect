@@ -262,7 +262,7 @@
         android:layout_height="70dp"
         android:layout_margin="24dp"
         android:backgroundTint="#FC7A57"
-        android:text="LAUNCH SQUAD"
+        android:text="LAUNCH TABLE"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
