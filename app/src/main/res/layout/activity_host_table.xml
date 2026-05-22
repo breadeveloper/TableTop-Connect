@@ -37,7 +37,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
-        android:paddingHorizontal="24dp"
+        android:scrollbarStyle="outsideOverlay"
         app:layout_constraintTop_toBottomOf="@+id/hostHeaderLayout"
         app:layout_constraintBottom_toTopOf="@+id/launchSquadButton">
 
@@ -45,6 +45,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:paddingHorizontal="24dp"
             android:paddingBottom="24dp">
 
             <TextView
@@ -96,9 +97,10 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp">
 
-                <ScrollView
+                <androidx.core.widget.NestedScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="200dp">
+                    android:layout_height="200dp"
+                    android:scrollbars="none">
 
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/genreChipGroup"
@@ -129,7 +131,7 @@
                         <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Party" style="@style/Widget.MaterialComponents.Chip.Filter"/>
                         <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Co-op" style="@style/Widget.MaterialComponents.Chip.Filter"/>
                     </com.google.android.material.chip.ChipGroup>
-                </ScrollView>
+                </androidx.core.widget.NestedScrollView>
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
@@ -202,13 +204,11 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <ImageView
+                    <org.osmdroid.views.MapView
+                        android:id="@+id/venueMap"
                         android:layout_width="match_parent"
                         android:layout_height="180dp"
-                        android:scaleType="centerCrop"
-                        android:src="@android:drawable/ic_dialog_map"
-                        android:background="#E0E0E0"
-                        android:layout_marginBottom="16dp"/>
+                        android:layout_marginBottom="16dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
