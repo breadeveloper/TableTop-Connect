@@ -59,7 +59,7 @@ public class HostTableActivity extends AppCompatActivity {
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
         Configuration.getInstance().setUserAgentValue(getPackageName());
 
-        setContentView(R.layout.activity_host_table); // Or activity_host_game based on your file naming
+        setContentView(R.layout.activity_host_table);
 
         // --- REQUEST LOCATION PERMISSIONS ---
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -158,7 +158,7 @@ public class HostTableActivity extends AppCompatActivity {
             updatePinUI();
         });
 
-        // --- LAUNCH SQUAD BUTTON (FIREBASE INTEGRATION) ---
+        // --- LAUNCH TABLE BUTTON (FIREBASE INTEGRATION) ---
         Button launchBtn = findViewById(R.id.launchSquadButton);
         launchBtn.setOnClickListener(v -> {
 
@@ -211,25 +211,23 @@ public class HostTableActivity extends AppCompatActivity {
             // 6. Push to Firestore
             launchBtn.setEnabled(false);
 
-            // --- YOUR NEW DEBUG TOAST ---
-            Toast.makeText(this, "Fetched! Lat: " + finalLat + " | Lon: " + finalLon, Toast.LENGTH_LONG).show();
+            // Print Coordinates to screen for debugging
+            Toast.makeText(this, "Fetched! Lat: " + finalLat + "\nLon: " + finalLon, Toast.LENGTH_LONG).show();
 
             FirebaseFirestore db = FirebaseFirestore.getInstance();
             db.collection("active_tables")
                     .add(tableData)
                     .addOnSuccessListener(documentReference -> {
-                        Toast.makeText(this, "Table Live! Squad assembled.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "Table Live! Squad assembled.", Toast.LENGTH_SHORT).show();
 
-                        Intent intent = new Intent(HostTableActivity.this, MySessionsFragment.class);
+                        Intent intent = new Intent(HostTableActivity.this, HomeActivity.class);
+                        intent.putExtra("OPEN_TAB", 0);
+
+                        // --- THE FIX: WAKE UP THE EXISTING HOME ACTIVITY ---
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
                         startActivity(intent);
-
-                        // We still call finish() so the user can't hit the "Back" button
-                        // and accidentally launch the exact same table a second time!
                         finish();
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Failed to launch: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        launchBtn.setEnabled(true);
                     });
         });
     }
