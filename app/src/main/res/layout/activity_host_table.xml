@@ -194,6 +194,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
                 app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp">
@@ -233,8 +234,8 @@
                             android:layout_height="50dp"
                             android:layout_weight="1"
                             android:text="EDIT PIN"
-                            android:backgroundTint="#E1BEE7"
-                            android:textColor="#4A148C"
+                            android:backgroundTint="#FC7A57"
+                            android:textColor="#FFFFFF"
                             android:layout_marginStart="8dp"/>
                     </LinearLayout>
 
@@ -251,6 +252,152 @@
                             android:textColor="#2D2B30"/>
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5. Schedule"
+                android:textColor="#FC7A57"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchSchedule"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Scheduled Today (Play Now)"
+                        android:textColor="#2D2B30"
+                        android:textSize="16sp"
+                        android:checked="true"
+                        app:thumbTint="#FC7A57"
+                        app:trackTint="#FFCCBC"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="12dp">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Date"
+                            android:layout_marginBottom="12dp"
+                            app:boxStrokeColor="#FC7A57">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/inputDate"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true"
+                                android:enabled="false"
+                                android:textColor="#2D2B30"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="Start Time"
+                                android:layout_marginEnd="8dp"
+                                app:boxStrokeColor="#FC7A57">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/inputStartTime"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:focusable="false"
+                                    android:clickable="true"
+                                    android:enabled="false"
+                                    android:textColor="#2D2B30"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="End Time"
+                                android:layout_marginStart="8dp"
+                                app:boxStrokeColor="#FC7A57">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/inputEndTime"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:focusable="false"
+                                    android:clickable="true"
+                                    android:enabled="false"
+                                    android:textColor="#2D2B30"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="6. Join Method"
+                android:textColor="#FC7A57"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
+
+                <RadioGroup
+                    android:id="@+id/rgJoinMethod"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <RadioButton
+                        android:id="@+id/rbJoinImmediate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Join Immediately (No approval needed)"
+                        android:textColor="#2D2B30"
+                        android:buttonTint="#FC7A57"
+                        android:checked="true"
+                        android:layout_marginBottom="12dp"/>
+
+                    <RadioButton
+                        android:id="@+id/rbRequestJoin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Request to Join (Host must approve)"
+                        android:textColor="#2D2B30"
+                        android:buttonTint="#FC7A57" />
+                </RadioGroup>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
