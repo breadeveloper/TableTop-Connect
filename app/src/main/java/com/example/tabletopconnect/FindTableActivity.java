@@ -1,8 +1,10 @@
 package com.example.tabletopconnect;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -38,7 +40,8 @@ import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
-// --- FIREBASE IMPORTS ---
+// --- UI & FIREBASE IMPORTS ---
+import com.google.android.material.chip.Chip;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -50,13 +53,18 @@ public class FindTableActivity extends AppCompatActivity {
     private MapView map;
     private MyLocationNewOverlay locationOverlay;
 
-    // UI Elements
+    // Base UI Elements
     private CardView cvGameDetail;
     private TextView bottomSheetGameName, bottomSheetVenueName, bottomSheetPlayerCount;
     private TextView tvStatusText, tvScheduleText;
     private ImageView ivStatusCircle;
     private EditText etSearchTable;
     private ImageButton btnFilter;
+
+    // Expandable UI Elements
+    private LinearLayout expandableArea, playerListContainer, categoryChipContainer;
+    private TextView tvExpandedSchedule;
+    private Button btnViewTable, btnJoinRequest;
 
     // Data Management
     private List<QueryDocumentSnapshot> allTables = new ArrayList<>();
@@ -71,7 +79,6 @@ public class FindTableActivity extends AppCompatActivity {
     private String[] statuses = {"Open", "Closed", "Ongoing", "Scheduled", "Ended"};
     private boolean[] selectedStatuses = {true, false, true, true, false};
 
-    // NEW: Player Preference Trackers
     private boolean filterHideFull = false;
     private boolean filterJoinImmediate = true;
     private boolean filterRequestJoin = true;
@@ -95,7 +102,7 @@ public class FindTableActivity extends AppCompatActivity {
         selectedCategories = new boolean[categories.length];
         java.util.Arrays.fill(selectedCategories, true);
 
-        // Link UI
+        // Link Base UI
         ImageView btnBack = findViewById(R.id.btnBackFind);
         cvGameDetail = findViewById(R.id.cvGameDetail);
         bottomSheetGameName = findViewById(R.id.bottomSheetGameName);
@@ -108,6 +115,14 @@ public class FindTableActivity extends AppCompatActivity {
 
         etSearchTable = findViewById(R.id.etSearchTable);
         btnFilter = findViewById(R.id.btnFilter);
+
+        // Link Expandable UI
+        expandableArea = findViewById(R.id.expandableArea);
+        playerListContainer = findViewById(R.id.playerListContainer);
+        categoryChipContainer = findViewById(R.id.categoryChipContainer);
+        tvExpandedSchedule = findViewById(R.id.tvExpandedSchedule);
+        btnViewTable = findViewById(R.id.btnViewTable);
+        btnJoinRequest = findViewById(R.id.btnJoinRequest);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -145,7 +160,7 @@ public class FindTableActivity extends AppCompatActivity {
             }
         }));
 
-        // --- QoL Search Logic (Enter Key Cycling) ---
+        // --- QoL Search Logic ---
         etSearchTable.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -173,6 +188,17 @@ public class FindTableActivity extends AppCompatActivity {
                 return true;
             }
             return false;
+        });
+
+        // --- TOGGLE VIEW/COLLAPSE TABLE ---
+        btnViewTable.setOnClickListener(v -> {
+            if (expandableArea.getVisibility() == View.GONE) {
+                expandableArea.setVisibility(View.VISIBLE);
+                btnViewTable.setText("COLLAPSE TABLE");
+            } else {
+                expandableArea.setVisibility(View.GONE);
+                btnViewTable.setText("VIEW TABLE");
+            }
         });
 
         btnFilter.setOnClickListener(v -> showCustomFilterDialog());
@@ -214,28 +240,159 @@ public class FindTableActivity extends AppCompatActivity {
 
     private void resetSelectedMarker() {
         if (currentlySelectedMarker != null) {
-            String savedStatus = (String) currentlySelectedMarker.getRelatedObject();
+            QueryDocumentSnapshot doc = (QueryDocumentSnapshot) currentlySelectedMarker.getRelatedObject();
+            String savedStatus = doc != null ? doc.getString("status") : "Open";
             currentlySelectedMarker.setIcon(getScaledPin(getPinDrawableForStatus(savedStatus), 25));
             currentlySelectedMarker = null;
             map.invalidate();
         }
     }
 
+    // --- PROGRAMMATIC PLAYER ROW BUILDER ---
+    private void addPlayerRow(String playerName, boolean isHost) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0, 24, 0, 24);
+
+        // --- NEW: SPAWN THE QUICK-PEEK DIALOG ---
+        row.setOnClickListener(v -> {
+            // Inflate our custom compressed layout
+            View dialogView = getLayoutInflater().inflate(R.layout.dialog_player_profile, null);
+
+            // Set the dynamic data based on the player tapped!
+            TextView dialogName = dialogView.findViewById(R.id.dialogName);
+            dialogName.setText(playerName);
+
+            // Build and show the dialog
+            AlertDialog profileDialog = new AlertDialog.Builder(this)
+                    .setView(dialogView)
+                    .create();
+
+            // Make the system dialog background transparent so our custom rounded CardView shows perfectly
+            if (profileDialog.getWindow() != null) {
+                profileDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            }
+
+            profileDialog.show();
+        });
+
+        TextView tvName = new TextView(this);
+        tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f));
+        tvName.setText(playerName);
+        tvName.setTextColor(Color.parseColor("#2D2B30"));
+        tvName.setTextSize(16);
+        row.addView(tvName);
+
+        if (isHost) {
+            TextView tvHost = new TextView(this);
+            tvHost.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            tvHost.setText("[Host]");
+            tvHost.setTextColor(Color.parseColor("#FC7A57"));
+            tvHost.setTypeface(null, Typeface.BOLD);
+            row.addView(tvHost);
+        }
+
+        playerListContainer.addView(row);
+
+        View divider = new View(this);
+        divider.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2));
+        divider.setBackgroundColor(Color.parseColor("#F5F5F5"));
+        playerListContainer.addView(divider);
+    }
+
+    // --- THE PROGRESSIVE EXPANSION TRIGGER ---
     private void triggerMarkerClick(Marker clickedMarker) {
         resetSelectedMarker();
 
-        String clickedStatus = (String) clickedMarker.getRelatedObject();
+        // The Backpack: Extract full document from marker
+        QueryDocumentSnapshot document = (QueryDocumentSnapshot) clickedMarker.getRelatedObject();
+        String clickedStatus = document.getString("status");
+        if (clickedStatus == null) clickedStatus = "Open";
+
         clickedMarker.setIcon(getScaledPin(getPinDrawableForStatus(clickedStatus), 35));
         currentlySelectedMarker = clickedMarker;
 
-        bottomSheetGameName.setText(clickedMarker.getTitle());
-        bottomSheetVenueName.setText(clickedMarker.getSnippet());
-        bottomSheetPlayerCount.setText(clickedMarker.getSubDescription());
+        // Reset Expansion State securely
+        expandableArea.setVisibility(View.GONE);
+        btnViewTable.setText("VIEW TABLE");
+
+        // Populate Base Data (Collapsed Header)
+        String gameName = document.getString("gameName");
+        String venueName = document.getString("venueName");
+        bottomSheetGameName.setText(gameName != null ? gameName : "");
+        bottomSheetVenueName.setText(venueName != null ? venueName : "");
+
+        Long maxPlayers = document.getLong("playerCount");
+        Long currentPlayers = document.getLong("currentPlayers");
+        if (currentPlayers == null) currentPlayers = 1L;
+        String displayPlayers = (maxPlayers != null) ? currentPlayers + "/" + maxPlayers.toString() : "?";
+        bottomSheetPlayerCount.setText(displayPlayers);
 
         tvStatusText.setText(clickedStatus);
         ivStatusCircle.setColorFilter(Color.parseColor(getHexColorForStatus(clickedStatus)));
 
-        tvScheduleText.setText(clickedMarker.getId());
+        // Schedule Data extraction
+        String schedDate = document.getString("scheduledDate");
+        String startTime = document.getString("startTime");
+        String endTime = document.getString("endTime");
+
+        // Populate Header Schedule (Date Only)
+        if (clickedStatus.equals("Scheduled") && schedDate != null && !schedDate.isEmpty()) {
+            tvScheduleText.setText(schedDate);
+        } else if (clickedStatus.equals("Ended")) {
+            tvScheduleText.setText("Session Finished");
+        } else {
+            tvScheduleText.setText("Today");
+        }
+
+        // --- EXPANDED DATA POPULATION ---
+
+        // 1. Populate Expanded Schedule (Two-Liner)
+        String expandedSchedString = (schedDate != null ? schedDate : "") + "\n" +
+                (startTime != null ? startTime : "") + " - " +
+                (endTime != null ? endTime : "");
+        if (expandedSchedString.trim().equals("-")) expandedSchedString = "No Scheduled Date";
+        tvExpandedSchedule.setText(expandedSchedString);
+
+        // 2. Categories as Horizontal Chips
+        categoryChipContainer.removeAllViews();
+        List<String> tableCategories = (List<String>) document.get("categories");
+        if (tableCategories != null && !tableCategories.isEmpty()) {
+            for (String cat : tableCategories) {
+                Chip chip = new Chip(this);
+                chip.setText(cat);
+                chip.setChipBackgroundColorResource(android.R.color.white);
+                chip.setTextColor(Color.parseColor("#5E5B52"));
+                chip.setChipStrokeColor(ColorStateList.valueOf(Color.parseColor("#E0E0E0")));
+                chip.setChipStrokeWidth(2f);
+                categoryChipContainer.addView(chip);
+            }
+        } else {
+            TextView noCat = new TextView(this);
+            noCat.setText("None specified");
+            categoryChipContainer.addView(noCat);
+        }
+
+        // 3. Button State Logic
+        String joinMethod = document.getString("joinMethod");
+        if ("Request".equals(joinMethod)) {
+            btnJoinRequest.setText("REQUEST TO JOIN");
+            btnJoinRequest.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2196F3")));
+        } else {
+            btnJoinRequest.setText("JOIN");
+            btnJoinRequest.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+        }
+        btnJoinRequest.setOnClickListener(v -> Toast.makeText(this, "Action triggered!", Toast.LENGTH_SHORT).show());
+
+        // 4. Dynamic Roster Population
+        playerListContainer.removeAllViews();
+        addPlayerRow("GameMaster_Daet", true);
+
+        // Mock players for testing the UI scroll limit
+        int mockPlayerCount = 10;
+        for (int i = 2; i <= mockPlayerCount; i++) {
+            addPlayerRow("LocalPlayer_" + i, false);
+        }
 
         cvGameDetail.setVisibility(View.VISIBLE);
         map.getController().animateTo(clickedMarker.getPosition());
@@ -247,11 +404,8 @@ public class FindTableActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Radar Filters");
 
-        // Temporary arrays
         boolean[] tempStatuses = java.util.Arrays.copyOf(selectedStatuses, selectedStatuses.length);
         boolean[] tempCategories = java.util.Arrays.copyOf(selectedCategories, selectedCategories.length);
-
-        // Temporary preferences
         final boolean[] tempPrefs = {filterHideFull, filterJoinImmediate, filterRequestJoin};
 
         ScrollView scroll = new ScrollView(this);
@@ -259,7 +413,7 @@ public class FindTableActivity extends AppCompatActivity {
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setPadding(48, 24, 48, 24);
 
-        // --- SECTION 1: TABLE STATUS ---
+        // Section 1: Status
         TextView txtStatusTitle = new TextView(this);
         txtStatusTitle.setText("Table Status");
         txtStatusTitle.setTextSize(16);
@@ -276,14 +430,13 @@ public class FindTableActivity extends AppCompatActivity {
             mainLayout.addView(cb);
         }
 
-        // Divider 1
         View divider1 = new View(this);
         divider1.setBackgroundColor(Color.parseColor("#E0E0E0"));
         LinearLayout.LayoutParams params1 = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2);
         params1.setMargins(0, 32, 0, 32);
         mainLayout.addView(divider1, params1);
 
-        // --- SECTION 2: PLAYER PREFERENCES ---
+        // Section 2: Player Preferences
         TextView txtPrefsTitle = new TextView(this);
         txtPrefsTitle.setText("Player Preferences");
         txtPrefsTitle.setTextSize(16);
@@ -309,14 +462,13 @@ public class FindTableActivity extends AppCompatActivity {
         cbReqJoin.setOnCheckedChangeListener((btn, isChecked) -> tempPrefs[2] = isChecked);
         mainLayout.addView(cbReqJoin);
 
-        // Divider 2
         View divider2 = new View(this);
         divider2.setBackgroundColor(Color.parseColor("#E0E0E0"));
         LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2);
         params2.setMargins(0, 32, 0, 32);
         mainLayout.addView(divider2, params2);
 
-        // --- SECTION 3: GAME CATEGORIES ---
+        // Section 3: Categories
         TextView txtCatTitle = new TextView(this);
         txtCatTitle.setText("Game Categories");
         txtCatTitle.setTextSize(16);
@@ -339,7 +491,6 @@ public class FindTableActivity extends AppCompatActivity {
         builder.setView(scroll);
 
         builder.setPositiveButton("Apply", (dialog, which) -> {
-            // Save all states when they hit Apply
             selectedStatuses = java.util.Arrays.copyOf(tempStatuses, tempStatuses.length);
             selectedCategories = java.util.Arrays.copyOf(tempCategories, tempCategories.length);
             filterHideFull = tempPrefs[0];
@@ -354,7 +505,6 @@ public class FindTableActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        // Smart Toggle (Only affects Categories!)
         Button neutralBtn = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
         boolean hasCats = false;
         for (boolean b : tempCategories) { if (b) { hasCats = true; break; } }
@@ -400,16 +550,13 @@ public class FindTableActivity extends AppCompatActivity {
             String joinMethod = document.getString("joinMethod");
             List<String> tableCategories = (List<String>) document.get("categories");
 
-            // Legacy Database Support
             if (status == null) status = "Open";
             if (joinMethod == null) joinMethod = "Immediate";
             if (gameName == null) gameName = "";
             if (venueName == null) venueName = "";
 
-            // 1. Search Filter
             boolean matchesSearch = gameName.toLowerCase().contains(currentSearchText) || venueName.toLowerCase().contains(currentSearchText);
 
-            // 2. Status Filter
             boolean matchesStatus = false;
             for (int i = 0; i < statuses.length; i++) {
                 if (selectedStatuses[i] && status.equalsIgnoreCase(statuses[i])) {
@@ -418,7 +565,6 @@ public class FindTableActivity extends AppCompatActivity {
                 }
             }
 
-            // 3. Category Filter
             boolean matchesCategory = false;
             if (tableCategories == null || tableCategories.isEmpty()) {
                 matchesCategory = true;
@@ -431,25 +577,21 @@ public class FindTableActivity extends AppCompatActivity {
                 }
             }
 
-            // 4. Preferences Filter: Hide Full Tables
             boolean passesFullCheck = true;
             Long maxPlayers = document.getLong("playerCount");
             Long currentPlayers = document.getLong("currentPlayers");
-            if (currentPlayers == null) currentPlayers = 1L; // Fallback
+            if (currentPlayers == null) currentPlayers = 1L;
             if (filterHideFull && maxPlayers != null && currentPlayers >= maxPlayers) {
                 passesFullCheck = false;
             }
 
-            // 5. Preferences Filter: Join Method
             boolean matchesJoinMethod = false;
             if (joinMethod.equals("Immediate") && filterJoinImmediate) matchesJoinMethod = true;
             if (joinMethod.equals("Request") && filterRequestJoin) matchesJoinMethod = true;
 
-            // --- FINAL VALIDATION ---
             if (matchesSearch && matchesStatus && matchesCategory && passesFullCheck && matchesJoinMethod) {
                 Double lat = document.getDouble("latitude");
                 Double lon = document.getDouble("longitude");
-                String displayPlayers = (maxPlayers != null) ? currentPlayers + "/" + maxPlayers.toString() : "?";
 
                 if (lat != null && lon != null) {
                     GeoPoint tablePoint = new GeoPoint(lat, lon);
@@ -458,23 +600,13 @@ public class FindTableActivity extends AppCompatActivity {
 
                     tableMarker.setIcon(getScaledPin(getPinDrawableForStatus(status), 25));
                     tableMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                    tableMarker.setRelatedObject(status);
 
+                    // The Backpack: We put the whole document into the marker!
+                    tableMarker.setRelatedObject(document);
+
+                    // We set these purely for default behaviors, though we pull from the document in our click trigger
                     tableMarker.setTitle(gameName);
                     tableMarker.setSnippet(venueName);
-                    tableMarker.setSubDescription(displayPlayers);
-
-                    String schedDate = document.getString("scheduledDate");
-                    String schedTime = document.getString("startTime");
-                    String finalSchedText = "";
-                    if (status.equals("Scheduled") && schedDate != null && !schedDate.isEmpty()) {
-                        finalSchedText = schedDate + ", " + schedTime;
-                    } else if (status.equals("Ended")) {
-                        finalSchedText = "Session Finished";
-                    } else {
-                        finalSchedText = "Playing Now";
-                    }
-                    tableMarker.setId(finalSchedText);
 
                     tableMarker.setOnMarkerClickListener((clickedMarker, mapView) -> {
                         triggerMarkerClick(clickedMarker);

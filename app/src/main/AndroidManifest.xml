@@ -17,6 +17,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TableTopConnect">
         <activity
+            android:name=".ReviewSessionActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SessionChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".FindTableActivity"
             android:exported="false" />
         <activity
